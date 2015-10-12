@@ -97,6 +97,54 @@ namespace Microsoft.AspNet.Mvc
             viewEngine.Verify();
         }
 
+        [Fact]
+        public async Task ExecuteResultAsync_ViewResultAllowNullViewDataAndTempData()
+        {
+            var context = GetActionContext();
+            var controller = new TestController(context);
+
+            await controller.Index().ExecuteResultAsync(context);
+            Assert.Null(controller.ViewContext.ViewData);
+            Assert.Null(controller.ViewContext.TempData);
+        }
+
+        private class TestController
+        {
+            public ViewContext ViewContext { get; set; }
+            private IViewEngine _engine;
+            public TestController(ActionContext context)
+            {
+                var view = new Mock<IView>(MockBehavior.Strict);
+                view
+                    .Setup(v => v.RenderAsync(It.IsAny<ViewContext>())).Callback((ViewContext viewContext) =>
+                    {
+                        ViewContext = viewContext;
+                    })
+                    .Returns(Task.FromResult(0))
+                    .Verifiable();
+
+                view
+                    .As<IDisposable>()
+                    .Setup(v => v.Dispose())
+                    .Verifiable();
+                var viewEngine = new Mock<IViewEngine>(MockBehavior.Strict);
+                viewEngine
+                    .Setup(e => e.FindView(context, "myview"))
+                    .Returns(ViewEngineResult.Found("myview", view.Object))
+                    .Verifiable();
+
+                _engine = viewEngine.Object;
+            }
+
+            public IActionResult Index()
+            {
+                return new ViewResult {
+                    ViewEngine = _engine,
+                    ViewName = "myview"
+                };
+            }
+        }
+
         private ActionContext GetActionContext()
         {
             return new ActionContext(GetHttpContext(), new RouteData(), new ActionDescriptor());

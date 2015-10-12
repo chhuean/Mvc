@@ -58,16 +58,6 @@ namespace Microsoft.AspNet.Mvc.Rendering
                 throw new ArgumentNullException(nameof(view));
             }
 
-            if (viewData == null)
-            {
-                throw new ArgumentNullException(nameof(viewData));
-            }
-
-            if (tempData == null)
-            {
-                throw new ArgumentNullException(nameof(tempData));
-            }
-
             if (writer == null)
             {
                 throw new ArgumentNullException(nameof(writer));
@@ -112,11 +102,6 @@ namespace Microsoft.AspNet.Mvc.Rendering
             if (view == null)
             {
                 throw new ArgumentNullException(nameof(view));
-            }
-
-            if (viewData == null)
-            {
-                throw new ArgumentNullException(nameof(viewData));
             }
 
             if (writer == null)

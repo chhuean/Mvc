@@ -119,16 +119,6 @@ namespace Microsoft.AspNet.Mvc.ViewFeatures
                 throw new ArgumentNullException(nameof(view));
             }
 
-            if (viewData == null)
-            {
-                throw new ArgumentNullException(nameof(viewData));
-            }
-
-            if (tempData == null)
-            {
-                throw new ArgumentNullException(nameof(tempData));
-            }
-
             var response = actionContext.HttpContext.Response;
 
             if (contentType != null && contentType.Encoding == null)
