@@ -133,14 +133,8 @@ namespace Microsoft.AspNet.Mvc.ViewFeatures
                 context,
                 new RouteData(),
                 new ActionDescriptor());
-
-
-            var adapter = new TestTelemetryListener();
-
-            var telemetryListener = new TelemetryListener("Test");
-            telemetryListener.SubscribeWithAdapter(adapter);
-
-            var viewExecutor = CreateViewExecutor(telemetryListener);
+            
+            var viewExecutor = CreateViewExecutor();
 
             // Act
             await viewExecutor.ExecuteAsync(
