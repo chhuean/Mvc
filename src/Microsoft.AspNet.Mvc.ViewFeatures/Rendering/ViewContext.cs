@@ -3,6 +3,7 @@
 
 using System;
 using System.IO;
+using Microsoft.AspNet.Http.Internal;
 using Microsoft.AspNet.Mvc.ModelBinding;
 using Microsoft.AspNet.Mvc.ViewEngines;
 using Microsoft.AspNet.Mvc.ViewFeatures;
@@ -68,6 +69,16 @@ namespace Microsoft.AspNet.Mvc.Rendering
                 throw new ArgumentNullException(nameof(htmlHelperOptions));
             }
 
+            if (viewData == null)
+            {
+                viewData = new ViewDataDictionary(new EmptyModelMetadataProvider());
+            }
+
+            if (tempData == null)
+            {
+                tempData = new TempDataDictionary(new HttpContextAccessor(), new SessionStateTempDataProvider());
+            }
+
             View = view;
             ViewData = viewData;
             TempData = tempData;
@@ -102,6 +113,11 @@ namespace Microsoft.AspNet.Mvc.Rendering
             if (view == null)
             {
                 throw new ArgumentNullException(nameof(view));
+            }
+
+            if (viewData == null)
+            {
+                viewData = new ViewDataDictionary(new EmptyModelMetadataProvider());
             }
 
             if (writer == null)

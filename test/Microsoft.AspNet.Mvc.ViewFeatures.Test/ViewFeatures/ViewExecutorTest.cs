@@ -133,7 +133,7 @@ namespace Microsoft.AspNet.Mvc.ViewFeatures
                 context,
                 new RouteData(),
                 new ActionDescriptor());
-            
+
             var viewExecutor = CreateViewExecutor();
 
             // Act
@@ -147,8 +147,8 @@ namespace Microsoft.AspNet.Mvc.ViewFeatures
 
             // Assert
             Assert.Equal(200, context.Response.StatusCode);
-            Assert.True(viewDataNull);
-            Assert.True(tempDataNull);
+            Assert.False(viewDataNull);
+            Assert.False(tempDataNull);
         }
 
         [Fact]

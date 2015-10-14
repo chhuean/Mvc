@@ -5,7 +5,9 @@ using System;
 using System.Diagnostics.Tracing;
 using System.Text;
 using System.Threading.Tasks;
+using Microsoft.AspNet.Http.Internal;
 using Microsoft.AspNet.Mvc.Infrastructure;
+using Microsoft.AspNet.Mvc.ModelBinding;
 using Microsoft.AspNet.Mvc.Rendering;
 using Microsoft.AspNet.Mvc.ViewEngines;
 using Microsoft.Extensions.OptionsModel;
@@ -117,6 +119,16 @@ namespace Microsoft.AspNet.Mvc.ViewFeatures
             if (view == null)
             {
                 throw new ArgumentNullException(nameof(view));
+            }
+
+            if (viewData == null)
+            {
+                viewData = new ViewDataDictionary(new EmptyModelMetadataProvider());
+            }
+
+            if (tempData == null)
+            {
+                tempData = new TempDataDictionary(new HttpContextAccessor(), new SessionStateTempDataProvider());
             }
 
             var response = actionContext.HttpContext.Response;
