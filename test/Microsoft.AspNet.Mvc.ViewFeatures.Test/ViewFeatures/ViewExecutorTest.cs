@@ -113,6 +113,51 @@ namespace Microsoft.AspNet.Mvc.ViewFeatures
         }
 
         [Fact]
+        public async Task ExecuteAsync_ViewResultAllowNull()
+        {
+            bool tempDataNull = false;
+            bool viewDataNull = false;
+            // Arrange
+            var view = CreateView(async (v) =>
+            {
+                tempDataNull = v.TempData == null;
+                viewDataNull = v.ViewData == null;
+
+                await v.Writer.WriteAsync("abcd");
+            });
+            var context = new DefaultHttpContext();
+            var memoryStream = new MemoryStream();
+            context.Response.Body = memoryStream;
+
+            var actionContext = new ActionContext(
+                context,
+                new RouteData(),
+                new ActionDescriptor());
+
+
+            var adapter = new TestTelemetryListener();
+
+            var telemetryListener = new TelemetryListener("Test");
+            telemetryListener.SubscribeWithAdapter(adapter);
+
+            var viewExecutor = CreateViewExecutor(telemetryListener);
+
+            // Act
+            await viewExecutor.ExecuteAsync(
+                actionContext,
+                view,
+                null,
+                null,
+                contentType: null,
+                statusCode: 200);
+
+            // Assert
+            Assert.Equal(200, context.Response.StatusCode);
+            Assert.True(viewDataNull);
+            Assert.True(tempDataNull);
+        }
+
+        [Fact]
         public async Task ExecuteAsync_SetsStatusCode()
         {
             // Arrange
