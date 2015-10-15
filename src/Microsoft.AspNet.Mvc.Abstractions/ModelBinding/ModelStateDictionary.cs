@@ -496,10 +496,7 @@ namespace Microsoft.AspNet.Mvc.ModelBinding
         {
             // If key is null or empty, clear all entries in the dictionary
             // else just clear the ones that have key as prefix
-            var entries = (string.IsNullOrEmpty(key)) ?
-                _innerDictionary : FindKeysWithPrefix(key);
-
-            foreach (var entry in entries)
+            foreach (var entry in FindKeysWithPrefix(key ?? string.Empty))
             {
                 entry.Value.Errors.Clear();
                 entry.Value.ValidationState = ModelValidationState.Unvalidated;
@@ -656,70 +653,204 @@ namespace Microsoft.AspNet.Mvc.ModelBinding
             return GetEnumerator();
         }
 
-        public IEnumerable<KeyValuePair<string, ModelState>> FindKeysWithPrefix(string prefix)
+        public static bool StartsWithPrefix(string prefix, string key)
         {
             if (prefix == null)
             {
                 throw new ArgumentNullException(nameof(prefix));
             }
 
-            ModelState exactMatchValue;
-            if (_innerDictionary.TryGetValue(prefix, out exactMatchValue))
+            if (key == null)
             {
-                yield return new KeyValuePair<string, ModelState>(prefix, exactMatchValue);
+                throw new ArgumentNullException(nameof(key));
             }
 
-            foreach (var entry in _innerDictionary)
+            if (StringComparer.OrdinalIgnoreCase.Equals(key, prefix))
             {
-                var key = entry.Key;
+                return true;
+            }
 
-                if (key.Length <= prefix.Length)
+            if (key.Length <= prefix.Length)
+            {
+                return false;
+            }
+
+            if (!key.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+            {
+                if (key.StartsWith("[", StringComparison.OrdinalIgnoreCase))
                 {
-                    continue;
-                }
+                    var subKey = key.Substring(key.IndexOf('.') + 1);
 
-                if (!key.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
-                {
-
-                    if (key.StartsWith("[", StringComparison.OrdinalIgnoreCase))
+                    if (!subKey.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
                     {
-                        var subKey = key.Substring(key.IndexOf('.') + 1);
-
-                        if (!subKey.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
-                        {
-                            continue;
-                        }
-
-                        if (string.Equals(prefix, subKey, StringComparison.Ordinal))
-                        {
-                            yield return entry;
-                            continue;
-                        }
-
-                        key = subKey;
+                        return false;
                     }
-                    else
+
+                    if (string.Equals(prefix, subKey, StringComparison.Ordinal))
                     {
-                        continue;
+                        return true;
                     }
-                }
 
-                // Everything is prefixed by the empty string
-                if (prefix.Length == 0)
-                {
-                    yield return entry;
+                    key = subKey;
                 }
                 else
                 {
-                    var charAfterPrefix = key[prefix.Length];
-                    switch (charAfterPrefix)
+                    return false;
+                }
+            }
+
+            // Everything is prefixed by the empty string
+            if (prefix.Length == 0)
+            {
+                return true;
+            }
+            else
+            {
+                var charAfterPrefix = key[prefix.Length];
+                switch (charAfterPrefix)
+                {
+                    case '[':
+                    case '.':
+                        return true;
+                }
+            }
+
+            return false;
+        }
+
+        public PrefixEnumerable FindKeysWithPrefix(string prefix)
+        {
+            if (prefix == null)
+            {
+                throw new ArgumentNullException(nameof(prefix));
+            }
+
+            return new PrefixEnumerable(this, prefix);
+        }
+
+        public struct PrefixEnumerable : IEnumerable<KeyValuePair<string, ModelState>>
+        {
+            private readonly ModelStateDictionary _dictionary;
+            private readonly string _prefix;
+
+            public PrefixEnumerable(ModelStateDictionary dictionary, string prefix)
+            {
+                if (dictionary == null)
+                {
+                    throw new ArgumentNullException(nameof(dictionary));
+                }
+
+                if (prefix == null)
+                {
+                    throw new ArgumentNullException(nameof(prefix));
+                }
+
+                _dictionary = dictionary;
+                _prefix = prefix;
+            }
+
+            public PrefixEnumerator GetEnumerator()
+            {
+                return _dictionary == null ? new PrefixEnumerator() : new PrefixEnumerator(_dictionary, _prefix);
+            }
+
+            IEnumerator<KeyValuePair<string, ModelState>> IEnumerable<KeyValuePair<string, ModelState>>.GetEnumerator()
+            {
+                return GetEnumerator();
+            }
+
+            IEnumerator IEnumerable.GetEnumerator()
+            {
+                return GetEnumerator();
+            }
+        }
+
+        public struct PrefixEnumerator : IEnumerator<KeyValuePair<string, ModelState>>
+        {
+            private readonly ModelStateDictionary _dictionary;
+            private readonly string _prefix;
+
+            private bool _exactMatchUsed;
+            private IEnumerator<KeyValuePair<string, ModelState>> _enumerator;
+
+            public PrefixEnumerator(ModelStateDictionary dictionary, string prefix)
+            {
+                if (dictionary == null)
+                {
+                    throw new ArgumentNullException(nameof(dictionary));
+                }
+
+                if (prefix == null)
+                {
+                    throw new ArgumentNullException(nameof(prefix));
+                }
+
+                _dictionary = dictionary;
+                _prefix = prefix;
+
+                _exactMatchUsed = false;
+                _enumerator = null;
+                Current = default(KeyValuePair<string, ModelState>);
+            }
+
+            public KeyValuePair<string, ModelState> Current { get; private set; }
+
+            object IEnumerator.Current
+            {
+                get
+                {
+                    return Current;
+                }
+            }
+
+            public void Dispose()
+            {
+            }
+
+            public bool MoveNext()
+            {
+                if (_dictionary == null)
+                {
+                    return false;
+                }
+
+                // ModelStateDictionary has a behavior where the first 'match' returned from iterating
+                // prefixes is the exact match for the prefix (if present). Only after looking for an
+                // exact match do we fall back to iteration to find 'starts-with' matches.
+                if (!_exactMatchUsed)
+                {
+                    _exactMatchUsed = true;
+                    _enumerator = _dictionary.GetEnumerator();
+
+                    ModelState entry;
+                    if (_dictionary.TryGetValue(_prefix, out entry))
                     {
-                        case '[':
-                        case '.':
-                            yield return entry;
-                            break;
+                        Current = new KeyValuePair<string, ModelState>(_prefix, entry);
+                        return true;
                     }
                 }
+
+                while (_enumerator.MoveNext())
+                {
+                    if (string.Equals(_prefix, _enumerator.Current.Key, StringComparison.OrdinalIgnoreCase))
+                    {
+                        // Skip this one. We've already handle the 'exact match' case.
+                    }
+                    else if (StartsWithPrefix(_prefix, _enumerator.Current.Key))
+                    {
+                        Current = _enumerator.Current;
+                        return true;
+                    }
+                }
+
+                return false;
+            }
+
+            public void Reset()
+            {
+                _exactMatchUsed = false;
+                _enumerator = null;
+                Current = default(KeyValuePair<string, ModelState>);
             }
         }
     }
