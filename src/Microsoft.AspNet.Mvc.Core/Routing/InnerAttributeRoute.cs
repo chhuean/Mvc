@@ -247,8 +247,7 @@ namespace Microsoft.AspNet.Mvc.Routing
             var inputValues = new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase);
             foreach (var kvp in context.Values)
             {
-                if (entry.RequiredLinkValues.ContainsKey(kvp.Key) ||
-                    string.Equals(kvp.Key, AttributeRouting.RouteGroupKey, StringComparison.OrdinalIgnoreCase))
+                if (entry.RequiredLinkValues.ContainsKey(kvp.Key))
                 {
                     var parameter = entry.Template.Parameters
                         .FirstOrDefault(p => string.Equals(p.Name, kvp.Key, StringComparison.OrdinalIgnoreCase));

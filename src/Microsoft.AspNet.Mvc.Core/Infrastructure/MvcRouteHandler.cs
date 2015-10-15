@@ -8,6 +8,7 @@ using Microsoft.AspNet.Http;
 using Microsoft.AspNet.Mvc.Abstractions;
 using Microsoft.AspNet.Mvc.Core;
 using Microsoft.AspNet.Mvc.Internal;
+using Microsoft.AspNet.Mvc.Routing;
 using Microsoft.AspNet.Routing;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -66,6 +67,7 @@ namespace Microsoft.AspNet.Mvc.Infrastructure
             // without affecting something upstream.
             var oldRouteData = context.RouteData;
             var newRouteData = new RouteData(oldRouteData);
+            newRouteData.Values.Remove(AttributeRouting.RouteGroupKey);
 
             if (actionDescriptor.RouteValueDefaults != null)
             {
