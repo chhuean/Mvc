@@ -44,6 +44,11 @@ namespace Microsoft.AspNet.Mvc.ApplicationModels
                     controllerModel.Filters.Add(new AuthorizeFilter(policy));
                 }
 
+                foreach (var attribute in controllerModel.Attributes.OfType<AllowAnonymousAttribute>())
+                {
+                    controllerModel.Filters.Add(new AllowAnonymousFilter());
+                }
+
                 foreach (var actionModel in controllerModel.Actions)
                 {
                     policy = AuthorizationPolicy.Combine(
@@ -52,6 +57,11 @@ namespace Microsoft.AspNet.Mvc.ApplicationModels
                     if (policy != null)
                     {
                         actionModel.Filters.Add(new AuthorizeFilter(policy));
+                    }
+
+                    foreach (var attribute in actionModel.Attributes.OfType<AllowAnonymousAttribute>())
+                    {
+                        actionModel.Filters.Add(new AllowAnonymousFilter());
                     }
                 }
             }
