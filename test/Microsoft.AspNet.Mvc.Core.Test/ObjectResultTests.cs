@@ -26,16 +26,34 @@ namespace Microsoft.AspNet.Mvc
 {
     public class ObjectResultTests
     {
+        [Fact]
+        public void ObjectResult_Constructor()
+        {
+            // Arrange
+            var input = "testInput";
+            var actionContext = CreateMockActionContext();
+
+            // Act
+            var result = new ObjectResult(input);
+
+            // Assert
+            Assert.Equal(input, result.Value);
+            Assert.Empty(result.ContentTypes);
+            Assert.Empty(result.Formatters);
+            Assert.Null(result.StatusCode);
+            Assert.Null(result.DeclaredType);
+        }
+
         public static IEnumerable<object[]> ContentTypes
         {
             get
             {
                 var contentTypes = new string[]
-                        {
-                            "text/plain",
-                            "text/xml",
-                            "application/json",
-                        };
+                {
+                    "text/plain",
+                    "text/xml",
+                    "application/json",
+                };
 
                 // Empty accept header, should select based on contentTypes.
                 yield return new object[] { contentTypes, "", "application/json; charset=utf-8" };
@@ -51,20 +69,22 @@ namespace Microsoft.AspNet.Mvc
                 // Should select based on if any formatter supported any user provided content type.
                 yield return new object[] { contentTypes, "text/xml", "application/json; charset=utf-8" };
 
-                // Filtets out Accept headers with 0 quality and selects the one with highest quality.
+                // Filters out Accept headers with 0 quality and selects the one with highest quality.
                 yield return new object[]
-                        {
-                            contentTypes,
-                            "text/plain;q=0.3, text/json;q=0, text/cusotm;q=0.0, application/json;q=0.4",
-                            "application/json; charset=utf-8"
-                        };
+                {
+                    contentTypes,
+                    "text/plain;q=0.3, text/json;q=0, text/cusotm;q=0.0, application/json;q=0.4",
+                    "application/json; charset=utf-8"
+                };
             }
         }
 
         [Theory]
         [MemberData(nameof(ContentTypes))]
         public async Task ObjectResult_WithMultipleContentTypesAndAcceptHeaders_PerformsContentNegotiation(
-            IEnumerable<string> contentTypes, string acceptHeader, string expectedHeader)
+            IEnumerable<string> contentTypes,
+            string acceptHeader,
+            string expectedHeader)
         {
             // Arrange
             var expectedContentType = expectedHeader;
@@ -83,10 +103,10 @@ namespace Microsoft.AspNet.Mvc
             // Set the content type property explicitly.
             result.ContentTypes = contentTypes.Select(contentType => MediaTypeHeaderValue.Parse(contentType)).ToList();
             result.Formatters = new List<IOutputFormatter>
-                                            {
-                                                new CannotWriteFormatter(),
-                                                new JsonOutputFormatter(),
-                                            };
+            {
+                new CannotWriteFormatter(),
+                new JsonOutputFormatter(),
+            };
 
             // Act
             await result.ExecuteResultAsync(actionContext);
@@ -94,20 +114,6 @@ namespace Microsoft.AspNet.Mvc
             // Assert
             // should always select the Json Output formatter even though it is second in the list.
             httpResponse.VerifySet(r => r.ContentType = expectedContentType);
-        }
-
-        [Fact]
-        public void ObjectResult_Create_CallsContentResult_InitializesValue()
-        {
-            // Arrange
-            var input = "testInput";
-            var actionContext = CreateMockActionContext();
-
-            // Act
-            var result = new ObjectResult(input);
-
-            // Assert
-            Assert.Equal(input, result.Value);
         }
 
         [Fact]
@@ -419,10 +425,11 @@ namespace Microsoft.AspNet.Mvc
 
             // Set more than one formatters. The test output formatter throws on write.
             result.Formatters = new List<IOutputFormatter>
-                                    {
-                                        new CannotWriteFormatter(),
-                                        new JsonOutputFormatter(),
-                                    };
+            {
+                new CannotWriteFormatter(),
+                new JsonOutputFormatter(),
+            };
+
             // Act
             await result.ExecuteResultAsync(actionContext);
 
