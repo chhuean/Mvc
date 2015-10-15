@@ -3,10 +3,10 @@
 
 using System;
 using System.IO;
-using Microsoft.AspNet.Http.Internal;
 using Microsoft.AspNet.Mvc.ModelBinding;
 using Microsoft.AspNet.Mvc.ViewEngines;
 using Microsoft.AspNet.Mvc.ViewFeatures;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Microsoft.AspNet.Mvc.Rendering
 {
@@ -68,15 +68,17 @@ namespace Microsoft.AspNet.Mvc.Rendering
             {
                 throw new ArgumentNullException(nameof(htmlHelperOptions));
             }
+            var service = actionContext.HttpContext.RequestServices;
 
             if (viewData == null)
             {
-                viewData = new ViewDataDictionary(new EmptyModelMetadataProvider());
+                var modelMetadataProvider = service.GetRequiredService<IModelMetadataProvider>();
+                viewData = new ViewDataDictionary(modelMetadataProvider);
             }
 
             if (tempData == null)
             {
-                tempData = new TempDataDictionary(new HttpContextAccessor(), new SessionStateTempDataProvider());
+                tempData = service.GetRequiredService<ITempDataDictionary>();
             }
 
             View = view;
@@ -117,7 +119,8 @@ namespace Microsoft.AspNet.Mvc.Rendering
 
             if (viewData == null)
             {
-                viewData = new ViewDataDictionary(new EmptyModelMetadataProvider());
+                var metadata = viewContext.HttpContext.RequestServices.GetRequiredService<IModelMetadataProvider>();
+                viewData = new ViewDataDictionary(metadata);
             }
 
             if (writer == null)

@@ -5,11 +5,11 @@ using System;
 using System.Diagnostics.Tracing;
 using System.Text;
 using System.Threading.Tasks;
-using Microsoft.AspNet.Http.Internal;
 using Microsoft.AspNet.Mvc.Infrastructure;
 using Microsoft.AspNet.Mvc.ModelBinding;
 using Microsoft.AspNet.Mvc.Rendering;
 using Microsoft.AspNet.Mvc.ViewEngines;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.OptionsModel;
 using Microsoft.Net.Http.Headers;
 
@@ -121,14 +121,16 @@ namespace Microsoft.AspNet.Mvc.ViewFeatures
                 throw new ArgumentNullException(nameof(view));
             }
 
+            var services = actionContext.HttpContext.RequestServices;
             if (viewData == null)
             {
-                viewData = new ViewDataDictionary(new EmptyModelMetadataProvider());
+                var metadataProvider = services.GetRequiredService<IModelMetadataProvider>();
+                viewData = new ViewDataDictionary(metadataProvider);
             }
 
             if (tempData == null)
             {
-                tempData = new TempDataDictionary(new HttpContextAccessor(), new SessionStateTempDataProvider());
+                tempData = services.GetRequiredService<ITempDataDictionary>();
             }
 
             var response = actionContext.HttpContext.Response;
